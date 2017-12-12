@@ -30,6 +30,6 @@ func regenNfsExports(piInv piInventory) error {
 		return err
 	}
 
-	_, err = exec.Command("exportfs -a").CombinedOutput()
+	_, err = exec.Command("exportfs", "-a").CombinedOutput()
 	return err
 }
