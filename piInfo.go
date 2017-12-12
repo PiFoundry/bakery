@@ -84,6 +84,9 @@ func (p *PiInfo) Bake(image bakeform) error {
 	err = image.Deploy(p)
 	if err != nil {
 		fmt.Println(err.Error())
+		p.Status = NOTINUSE
+		p.SourceBakeform = nil
+		p.Save()
 		return err
 	}
 
