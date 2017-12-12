@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 
 	"database/sql"
 
@@ -34,6 +35,8 @@ type bakeRequest struct {
 	BakeformName string `json:"bakeformName"`
 }
 
+var piProvisionMutexes map[string]*sync.Mutex
+
 func newPiInventory(bakeforms bakeformInventory) (piInventory, error) {
 	db, err := sql.Open("sqlite3", "piInventory.db")
 	sqlStmt := "create table if not exists inventory (id text not null primary key, status integer, bakeform text);"
@@ -56,6 +59,8 @@ func newPiInventory(bakeforms bakeformInventory) (piInventory, error) {
 			fmt.Println(err.Error())
 		}
 	}
+
+	piProvisionMutexes = make(map[string]*sync.Mutex)
 	return newInv, nil
 }
 

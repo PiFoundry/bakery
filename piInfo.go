@@ -43,7 +43,6 @@ type PiInfo struct {
 	Id              string   `json:"id"`
 	Status          piStatus `json:"status"`
 	SourceBakeform  bakeform `json:"sourceBakeform,omitempty"`
-	provisionMutex  *sync.Mutex
 }
 
 func (p *PiInfo) GetId() string {
@@ -81,8 +80,11 @@ func (p *PiInfo) Save() error {
 }
 
 func (p *PiInfo) Bake(image bakeform) error {
-	p.provisionMutex.Lock()
-	defer p.provisionMutex.Unlock()
+	if _, exists := piProvisionMutexes[p.Id]; !exists {
+		piProvisionMutexes[p.Id] = &sync.Mutex{}
+	}
+	piProvisionMutexes[p.Id].Lock()
+	defer piProvisionMutexes[p.Id].Unlock()
 	fmt.Printf("Baking pi with id: %v\n", p.Id)
 	//Set state to baking and Store State
 	p.Status = PREPARING
@@ -122,8 +124,11 @@ func (p *PiInfo) Bake(image bakeform) error {
 }
 
 func (p *PiInfo) Unbake() error {
-	p.provisionMutex.Lock()
-	defer p.provisionMutex.Unlock()
+	if _, exists := piProvisionMutexes[p.Id]; !exists {
+		piProvisionMutexes[p.Id] = &sync.Mutex{}
+	}
+	piProvisionMutexes[p.Id].Lock()
+	defer piProvisionMutexes[p.Id].Unlock()
 
 	fmt.Printf("Unbaking pi with id: %v\n", p.Id)
 	err := p.PowerOff()
