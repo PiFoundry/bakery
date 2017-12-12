@@ -119,6 +119,10 @@ func (p *PiInfo) Bake(image bakeform) error {
 
 func (p *PiInfo) Unbake() error {
 	fmt.Printf("Unbaking pi with id: %v\n", p.Id)
+	err := p.PowerOff()
+	if err != nil {
+		return err
+	}
 
 	//Get root location before deleting the pi
 	rootLoc := p.GetRootLocation()
@@ -126,7 +130,7 @@ func (p *PiInfo) Unbake() error {
 	//Set state to NOTINUSE and Store State
 	p.Status = NOTINUSE
 	p.SourceBakeform = nil
-	err := p.Save()
+	err = p.Save()
 	if err != nil {
 		return err
 	}
