@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"os/exec"
 	"sync"
 )
 
@@ -25,7 +26,10 @@ func regenNfsExports(piInv piInventory) error {
 
 	fmt.Println("Generated new exports file:\n" + exportsContent)
 	err = ioutil.WriteFile("/etc/exports", []byte(exportsContent), 0644)
+	if err != nil {
+		return err
+	}
 
-	//TODO: run exportfs -a
+	_, err = exec.Command("exportfs -a").CombinedOutput()
 	return err
 }
