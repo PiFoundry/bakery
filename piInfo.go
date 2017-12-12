@@ -190,8 +190,8 @@ func (p *PiInfo) doPpiAction(action string) error {
 
 	err = ppicmd.Wait()
 	if err != nil || len(outerr) != 0 || string(out) != "ok" {
-		fmt.Printf("%v/%v", string(outerr), string(out))
-		return fmt.Errorf("%v/%v", string(outerr), string(out))
+		//fmt.Printf("ppi output: %v/%v", string(outerr), string(out))
+		return fmt.Errorf("%v %v", string(outerr), string(out))
 	}
 
 	return nil
@@ -208,7 +208,7 @@ func (p *PiInfo) PowerOff() error {
 func (p *PiInfo) PowerCycle() error {
 	err := p.doPpiAction("poweroff")
 	if err != nil {
-		return nil
+		return err
 	}
 
 	time.Sleep(1 * time.Second)

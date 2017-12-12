@@ -267,6 +267,7 @@ func (i *PiInventory) RebootHandler(w http.ResponseWriter, r *http.Request) {
 	pi, err := i.GetPi(piId)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Pi not in inventory"))
 		return
 	}
 
@@ -274,7 +275,7 @@ func (i *PiInventory) RebootHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error power cycling Pi"))
+		w.Write([]byte(err.Error()))
 		return
 	}
 
