@@ -48,7 +48,7 @@ func newPiInventory(bakeforms bakeformInventory) (piInventory, error) {
 	}
 
 	stuckPis, _ := newInv.listPis(PREPARING)
-	fmt.Println("unstucking Pis that are stuck in the PREPARNG state.")
+	fmt.Println("unstucking Pis that are stuck in the PREPARING state.")
 	for _, pi := range stuckPis {
 		err := pi.Unstuck()
 		if err != nil {
