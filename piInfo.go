@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"sync"
 	"time"
 )
 
@@ -42,6 +43,7 @@ type PiInfo struct {
 	Id              string   `json:"id"`
 	Status          piStatus `json:"status"`
 	SourceBakeform  bakeform `json:"sourceBakeform,omitempty"`
+	provisionMutex  *sync.Mutex
 }
 
 func (p *PiInfo) GetId() string {
@@ -79,6 +81,8 @@ func (p *PiInfo) Save() error {
 }
 
 func (p *PiInfo) Bake(image bakeform) error {
+	p.provisionMutex.Lock()
+	defer p.provisionMutex.Unlock()
 	fmt.Printf("Baking pi with id: %v\n", p.Id)
 	//Set state to baking and Store State
 	p.Status = PREPARING
@@ -118,9 +122,13 @@ func (p *PiInfo) Bake(image bakeform) error {
 }
 
 func (p *PiInfo) Unbake() error {
+	p.provisionMutex.Lock()
+	defer p.provisionMutex.Unlock()
+
 	fmt.Printf("Unbaking pi with id: %v\n", p.Id)
 	err := p.PowerOff()
 	if err != nil {
+		fmt.Println(err.Error())
 		return err
 	}
 
@@ -169,13 +177,13 @@ func (p *PiInfo) doPpiAction(action string) error {
 
 	jsonBytes, err := json.Marshal(params)
 	if err != nil {
-		fmt.Println(err.Error())
+		return err
 	}
 
 	ppicmd := exec.Command("./ppi")
 	ppistdin, err := ppicmd.StdinPipe()
 	if err != nil {
-		fmt.Println(err.Error())
+		return err
 	}
 
 	ppistdout, _ := ppicmd.StdoutPipe()
