@@ -40,6 +40,8 @@ func (b *Bakeform) GetBootLocation() string {
 }
 
 func (b *Bakeform) Delete() error {
+	//TODO: Check if not in use
+	//TODO: Delete boot folder as well
 	b.unmount()
 	return os.Remove(b.Location)
 }

@@ -2,8 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
+	"time"
 )
 
 type piStatus int
@@ -26,6 +29,9 @@ type piInfo interface {
 	GetStatus() piStatus
 	GetSourceBakeform() bakeform
 	Unstuck() error
+	PowerOn() error
+	PowerOff() error
+	PowerCycle() error
 }
 
 type PiInfo struct {
@@ -131,4 +137,39 @@ func (p *PiInfo) GetSourceBakeform() bakeform {
 func (p *PiInfo) Unstuck() error {
 	p.Status = NOTINUSE
 	return p.Save()
+}
+
+func (p *PiInfo) doPpiAction(action string) error {
+	if action != "poweron" && action != "poweroff" {
+		return fmt.Errorf("action %v not supported", action)
+	}
+
+	params := ppmParams{
+		PiId:   p.Id,
+		Action: action,
+	}
+
+	jsonBytes, _ := json.Marshal(params)
+	out, err := exec.Command("./ppi", string(jsonBytes)).CombinedOutput()
+	fmt.Printf("ppi response: %v\n", string(out))
+	return err
+}
+
+func (p *PiInfo) PowerOn() error {
+	return p.doPpiAction("poweron")
+}
+
+func (p *PiInfo) PowerOff() error {
+	return p.doPpiAction("poweroff")
+}
+
+func (p *PiInfo) PowerCycle() error {
+	err := p.doPpiAction("poweroff")
+	if err != nil {
+		return nil
+	}
+
+	time.Sleep(1 * time.Second)
+
+	return p.doPpiAction("poweron")
 }
