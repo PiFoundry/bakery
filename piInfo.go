@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"time"
@@ -100,7 +102,19 @@ func (p *PiInfo) Bake(image bakeform) error {
 
 	//Set state to INUSE and Store State
 	p.Status = INUSE
-	return p.Save()
+	err = p.Save()
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	err = p.PowerCycle()
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func (p *PiInfo) Unbake() error {
@@ -144,15 +158,43 @@ func (p *PiInfo) doPpiAction(action string) error {
 		return fmt.Errorf("action %v not supported", action)
 	}
 
-	params := ppmParams{
+	params := ppiParams{
 		PiId:   p.Id,
 		Action: action,
 	}
 
-	jsonBytes, _ := json.Marshal(params)
-	out, err := exec.Command("./ppi", string(jsonBytes)).CombinedOutput()
-	fmt.Printf("ppi response: %v\n", string(out))
-	return err
+	jsonBytes, err := json.Marshal(params)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	ppicmd := exec.Command("./ppi")
+	ppistdin, err := ppicmd.StdinPipe()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	ppistdout, _ := ppicmd.StdoutPipe()
+	ppistderr, _ := ppicmd.StderrPipe()
+
+	err = ppicmd.Start()
+	if err != nil {
+		return err
+	}
+
+	io.WriteString(ppistdin, string(jsonBytes))
+	ppistdin.Close()
+
+	out, _ := ioutil.ReadAll(ppistdout)
+	outerr, _ := ioutil.ReadAll(ppistderr)
+
+	err = ppicmd.Wait()
+	if err != nil || len(outerr) != 0 || string(out) != "ok" {
+		fmt.Printf("%v/%v", string(outerr), string(out))
+		return fmt.Errorf("%v/%v", string(outerr), string(out))
+	}
+
+	return nil
 }
 
 func (p *PiInfo) PowerOn() error {

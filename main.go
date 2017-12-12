@@ -57,6 +57,7 @@ func main() {
 	r.Path("/api/v1/fridge").Methods(http.MethodPost).HandlerFunc(pile.BakeHandler)
 
 	//r.HandleFunc("/api/v1/oven/{piId}/reboot", rebootHandler) //Reboots the pi
+	r.Path("/api/v1/oven/{piId}/reboot").Methods(http.MethodPost).HandlerFunc(pile.RebootHandler)
 	r.Path("/api/v1/oven/{piId}").Methods(http.MethodGet).HandlerFunc(pile.GetPiHandler)
 	r.Path("/api/v1/oven/{piId}").Methods(http.MethodDelete).HandlerFunc(pile.UnbakeHandler)
 	r.Path("/api/v1/oven").Methods(http.MethodGet).HandlerFunc(pile.OvenHandler)

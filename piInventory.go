@@ -22,6 +22,7 @@ type piInventory interface {
 	GetPiHandler(w http.ResponseWriter, r *http.Request)
 	OvenHandler(w http.ResponseWriter, r *http.Request)
 	FridgeHandler(w http.ResponseWriter, r *http.Request)
+	RebootHandler(w http.ResponseWriter, r *http.Request)
 }
 
 type PiInventory struct {
@@ -257,4 +258,25 @@ func (i *PiInventory) FridgeHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func (i *PiInventory) RebootHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	piId := params["piId"]
+
+	pi, err := i.GetPi(piId)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = pi.PowerCycle()
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error power cycling Pi"))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
