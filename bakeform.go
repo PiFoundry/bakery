@@ -13,11 +13,11 @@ import (
 type bakeform interface {
 	GetName() string
 	GetBootLocation() string
-	GenerateRootLocation(pi piInfo) string
+	GenerateRootLocation(pi PiInfo) string
 	Delete() error
 	mount() error
 	unmount() error
-	Deploy(pi piInfo) error
+	Deploy(pi PiInfo) (string, error)
 }
 
 type Bakeform struct {
@@ -117,8 +117,8 @@ func (b *Bakeform) unmount() error {
 	return nil
 }
 
-func (b *Bakeform) GenerateRootLocation(pi piInfo) string {
-	rootLoc := b.nfs.GetNfsRoot() + "/" + pi.GetId()
+func (b *Bakeform) GenerateRootLocation(pi PiInfo) string {
+	rootLoc := b.nfs.GetNfsRoot() + "/" + pi.Id
 	return strings.Replace(rootLoc, "//", "/", -1)
 }
 
@@ -127,35 +127,29 @@ func (b *Bakeform) GenerateBootLocation() string {
 	return strings.Replace(bootLoc, "//", "/", -1)
 }
 
-func (b *Bakeform) Deploy(pi piInfo) error {
+func (b *Bakeform) Deploy(pi PiInfo) (string, error) {
 	err := b.mount()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	//copy root fs
-	rootDest := b.GenerateRootLocation(pi)
+	//copy root volume
 	source := b.MountedOn[1] + "/"
-
-	fmt.Printf("Cloning bakeform %v to %v\n", b.Name, rootDest)
-	err = b.nfs.CopyFolder(source, rootDest)
+	fmt.Printf("Cloning bakeform %v\n", b.Name)
+	rootLoc, err := b.nfs.CopyNfsFolder(source, pi.Id)
 	if err != nil {
-		return err
+		return "", err
 	}
 	///
 
 	//copy boot volume
 	// check if exists first
 	if b.bootLocation == "" {
-		bootDest := b.GenerateBootLocation()
-		b.nfs.CopyFolder(b.MountedOn[0]+"/", bootDest)
-		b.bootLocation = bootDest
+		source := b.MountedOn[0] + "/"
+		b.bootLocation, err = b.nfs.CopyBootFolder(source, b.Name)
+		return "", err
 	}
 	///
 
-	return regenNfsExports(pi.GetParentInventory())
-}
-
-func (b *Bakeform) Undeploy(pi piInfo) error {
-	return nil
+	return rootLoc, nil
 }

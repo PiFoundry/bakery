@@ -29,23 +29,25 @@ func main() {
 
 	initFolders(nfsRoot, imageFolder, bootFolder, mountRoot)
 
-	nfs, err := newFileBackend(nfsServer, nfsRoot, bootFolder)
+	fb, err := newFileBackend(nfsServer, nfsRoot, bootFolder)
 	if err != nil {
 		panic(err)
 	}
 
-	bakeforms, err := newBakeformInventory(imageFolder, mountRoot, nfs)
+	diskmgr, err := NewDiskManager(fb)
+
+	bakeforms, err := newBakeformInventory(imageFolder, mountRoot, fb)
 	if err != nil {
 		panic(err.Error())
 	}
 	defer bakeforms.UnmountAll()
 
-	pile, err := newPiInventory(bakeforms)
+	pile, err := NewPiManager(bakeforms, diskmgr)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	fs, err := newFileServer(nfs, pile)
+	fs, err := newFileServer(fb, pile, diskmgr)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -56,8 +58,9 @@ func main() {
 	r.Path("/api/v1/fridge").Methods(http.MethodGet).HandlerFunc(pile.FridgeHandler)
 	r.Path("/api/v1/fridge").Methods(http.MethodPost).HandlerFunc(pile.BakeHandler)
 
-	//r.HandleFunc("/api/v1/oven/{piId}/reboot", rebootHandler) //Reboots the pi
 	r.Path("/api/v1/oven/{piId}/reboot").Methods(http.MethodPost).HandlerFunc(pile.RebootHandler)
+	r.Path("/api/v1/oven/{piId}/disks").Methods(http.MethodPost).HandlerFunc(pile.LinkDiskHandler)
+	r.Path("/api/v1/oven/{piId}/disks/{diskId}").Methods(http.MethodDelete).HandlerFunc(pile.UnlinkDiskHandler)
 	r.Path("/api/v1/oven/{piId}").Methods(http.MethodGet).HandlerFunc(pile.GetPiHandler)
 	r.Path("/api/v1/oven/{piId}").Methods(http.MethodDelete).HandlerFunc(pile.UnbakeHandler)
 	r.Path("/api/v1/oven").Methods(http.MethodGet).HandlerFunc(pile.OvenHandler)
@@ -65,6 +68,11 @@ func main() {
 	r.Path("/api/v1/bakeforms").Methods(http.MethodGet).HandlerFunc(bakeforms.ListHandler)
 	r.Path("/api/v1/bakeforms/{name}").Methods(http.MethodPost).HandlerFunc(bakeforms.UploadHandler)
 	r.Path("/api/v1/bakeforms/{name}").Methods(http.MethodDelete).HandlerFunc(bakeforms.DeleteHandler)
+
+	r.Path("/api/v1/disks/{diskId}").Methods(http.MethodDelete).HandlerFunc(diskmgr.destroyDiskHandler)
+	r.Path("/api/v1/disks/{diskId}").Methods(http.MethodGet).HandlerFunc(diskmgr.getDiskHandler)
+	r.Path("/api/v1/disks").Methods(http.MethodPost).HandlerFunc(diskmgr.createDiskHandler)
+	r.Path("/api/v1/disks").Methods(http.MethodGet).HandlerFunc(diskmgr.listDisksHandler)
 
 	fmt.Println("Ready to bake!")
 	http.ListenAndServe(fmt.Sprintf(":%v", httpPort), r)

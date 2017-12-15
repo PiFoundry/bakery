@@ -2,20 +2,31 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
+	"sync"
 )
 
 type fileBackend interface {
 	GetNfsRoot() string
 	GetNfsAddress() string
 	GetBootRoot() string
-	CopyFolder(s, d string) error
+	//CopyFolder(string, string) error
+	CreateNfsFolder(string) (string, error)
+	DeleteNfsFolder(string) error
+	GetNfsFolders(string) []string
+	CopyNfsFolder(string, string) (string, error)
+	CopyBootFolder(string, string) (string, error)
 }
 
 type FileBackend struct {
-	nfsRoot    string
-	nfsAddress string
-	bootRoot   string
+	nfsRoot        string
+	nfsAddress     string
+	bootRoot       string
+	nfsExportMutex *sync.Mutex
 }
 
 func newFileBackend(nfsAddress, nfsRoot, bootRoot string) (fileBackend, error) {
@@ -24,9 +35,10 @@ func newFileBackend(nfsAddress, nfsRoot, bootRoot string) (fileBackend, error) {
 	}
 
 	return &FileBackend{
-		nfsRoot:    nfsRoot,
-		nfsAddress: nfsAddress,
-		bootRoot:   bootRoot,
+		nfsRoot:        nfsRoot,
+		nfsAddress:     nfsAddress,
+		bootRoot:       bootRoot,
+		nfsExportMutex: &sync.Mutex{},
 	}, nil
 }
 
@@ -42,11 +54,73 @@ func (nfs *FileBackend) GetBootRoot() string {
 	return nfs.bootRoot
 }
 
-func (f *FileBackend) CopyFolder(s, d string) error {
+func (f *FileBackend) copyFolder(s, d string) error {
 	_, err := exec.Command("rsync", "-xa", s, d).CombinedOutput()
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (f *FileBackend) CopyBootFolder(s, dest string) (string, error) {
+	d := f.bootRoot + "/" + dest
+	d = strings.Replace(d, "//", "/", -1)
+	return d, f.copyFolder(s, d)
+}
+
+func (f *FileBackend) CopyNfsFolder(s, dest string) (string, error) {
+	d := f.nfsRoot + "/" + dest
+	d = strings.Replace(d, "//", "/", -1)
+	err := f.copyFolder(s, d)
+	if err != nil {
+		return "", err
+	}
+
+	return d, f.regenNfsExports()
+}
+
+func (f *FileBackend) CreateNfsFolder(d string) (string, error) {
+	location := f.nfsRoot + "/" + d
+	err := os.Mkdir(location, 0644)
+	if err != nil {
+		return "", err
+	}
+	err = f.regenNfsExports()
+	return location, err
+}
+
+func (f *FileBackend) DeleteNfsFolder(d string) error {
+	location := f.nfsRoot + "/" + d
+	err := os.RemoveAll(location)
+	if err != nil {
+		return err
+	}
+	return f.regenNfsExports()
+}
+
+func (f *FileBackend) GetNfsFolders(pattern string) []string {
+	files, _ := filepath.Glob(f.nfsRoot + "/" + pattern)
+	return files
+}
+
+func (f *FileBackend) regenNfsExports() error {
+	f.nfsExportMutex.Lock()
+	defer f.nfsExportMutex.Unlock()
+
+	folderList := f.GetNfsFolders("*")
+
+	exportsContent := ""
+	for _, folder := range folderList {
+		exportsContent = exportsContent + fmt.Sprintf("%v *(rw,sync,no_subtree_check,no_root_squash)\n", folder)
+	}
+
+	fmt.Println("Generated new exports file:\n" + exportsContent)
+	err := ioutil.WriteFile("/etc/exports", []byte(exportsContent), 0644)
+	if err != nil {
+		return err
+	}
+
+	_, err = exec.Command("exportfs", "-a").CombinedOutput()
+	return err
 }

@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"os/exec"
-	"sync"
+	"strings"
 	"time"
 )
 
@@ -20,41 +19,14 @@ const (
 	PREPARING piStatus = 3
 )
 
-type piList map[string]piInfo
-
-type piInfo interface {
-	GetId() string
-	GetRootLocation() string
-	GetParentInventory() piInventory
-	Save() error
-	Bake(bakeform) error
-	Unbake() error
-	GetStatus() piStatus
-	GetSourceBakeform() bakeform
-	Unstuck() error
-	PowerOn() error
-	PowerOff() error
-	PowerCycle() error
-}
+type piList map[string]PiInfo
 
 type PiInfo struct {
-	db              *sql.DB
-	parentInventory piInventory
-	Id              string   `json:"id"`
-	Status          piStatus `json:"status"`
-	SourceBakeform  bakeform `json:"sourceBakeform,omitempty"`
-}
-
-func (p *PiInfo) GetId() string {
-	return p.Id
-}
-
-func (p *PiInfo) GetParentInventory() piInventory {
-	return p.parentInventory
-}
-
-func (p *PiInfo) GetRootLocation() string {
-	return p.SourceBakeform.GenerateRootLocation(p)
+	db             *sql.DB
+	Id             string   `json:"id"`
+	Status         piStatus `json:"status"`
+	Disks          []*disk  `json:"disks,omitempty"`
+	SourceBakeform bakeform `json:"sourceBakeform,omitempty"`
 }
 
 func (p *PiInfo) Save() error {
@@ -63,10 +35,19 @@ func (p *PiInfo) Save() error {
 	if p.SourceBakeform != nil {
 		bakeformString = p.SourceBakeform.GetName()
 	}
-	_, err := p.db.Exec(fmt.Sprintf("insert into inventory(id, status, bakeform) values('%v', %v, '%v')", p.Id, p.Status, bakeformString))
+
+	_, err := p.db.Exec(fmt.Sprintf("insert into inventory(id, status, bakeform, diskIds) values('%v', %v, '%v', '%v')", p.Id, p.Status, bakeformString, ""))
 	if err != nil {
 		if err.Error() == "UNIQUE constraint failed: inventory.id" {
-			stmt := fmt.Sprintf("update inventory set status = %v, bakeform = '%v' where id = '%v'", p.Status, bakeformString, p.Id)
+			var diskIds []string
+			for _, diskStruct := range p.Disks {
+				if diskStruct != nil {
+					diskIds = append(diskIds, diskStruct.ID)
+				}
+			}
+
+			diskIdsString := strings.Join(diskIds, ",")
+			stmt := fmt.Sprintf("update inventory set status = %v, bakeform = '%v', diskIds = '%v' where id = '%v'", p.Status, bakeformString, diskIdsString, p.Id)
 			_, err := p.db.Exec(stmt)
 			if err != nil {
 				return err
@@ -79,12 +60,7 @@ func (p *PiInfo) Save() error {
 	return nil
 }
 
-func (p *PiInfo) Bake(image bakeform) error {
-	if _, exists := piProvisionMutexes[p.Id]; !exists {
-		piProvisionMutexes[p.Id] = &sync.Mutex{}
-	}
-	piProvisionMutexes[p.Id].Lock()
-	defer piProvisionMutexes[p.Id].Unlock()
+func (p *PiInfo) Bake(image bakeform, dm *diskManager) error {
 	fmt.Printf("Baking pi with id: %v\n", p.Id)
 	//Set state to baking and Store State
 	p.Status = PREPARING
@@ -95,7 +71,7 @@ func (p *PiInfo) Bake(image bakeform) error {
 	}
 
 	//Create and fill system NFS export
-	err = image.Deploy(p)
+	diskLoc, err := image.Deploy(*p)
 	if err != nil {
 		fmt.Println(err.Error())
 		p.Status = NOTINUSE
@@ -104,10 +80,12 @@ func (p *PiInfo) Bake(image bakeform) error {
 		return err
 	}
 
-	fmt.Printf("Pi with id %v is ready!\n", p.Id)
+	//Register the newly created root disk
+	regDisk := dm.RegisterDisk(p.Id, diskLoc)
 
-	//Set state to INUSE and Store State
+	//Set state to INUSE and Store disks
 	p.Status = INUSE
+	p.Disks[0] = regDisk
 	err = p.Save()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -120,16 +98,11 @@ func (p *PiInfo) Bake(image bakeform) error {
 		return err
 	}
 
+	fmt.Printf("Pi with id %v is ready!\n", p.Id)
 	return nil
 }
 
-func (p *PiInfo) Unbake() error {
-	if _, exists := piProvisionMutexes[p.Id]; !exists {
-		piProvisionMutexes[p.Id] = &sync.Mutex{}
-	}
-	piProvisionMutexes[p.Id].Lock()
-	defer piProvisionMutexes[p.Id].Unlock()
-
+func (p *PiInfo) Unbake(dm *diskManager) error {
 	fmt.Printf("Unbaking pi with id: %v\n", p.Id)
 	err := p.PowerOff()
 	if err != nil {
@@ -137,8 +110,8 @@ func (p *PiInfo) Unbake() error {
 		return err
 	}
 
-	//Get root location before deleting the pi
-	rootLoc := p.GetRootLocation()
+	//Get disk locations before deleting the pi
+	disks := p.Disks
 
 	//Set state to NOTINUSE and Store State
 	p.Status = NOTINUSE
@@ -148,26 +121,16 @@ func (p *PiInfo) Unbake() error {
 		return err
 	}
 
-	regenNfsExports(p.parentInventory)
-	err = os.RemoveAll(rootLoc)
-	if err != nil {
-		fmt.Println(err.Error())
+	//delete attached disks (including root)
+	for _, d := range disks {
+		fmt.Println("Destroying disk: " + d.Location)
+		err := dm.DestroyDisk(d.ID)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
 	}
 
 	return err
-}
-
-func (p *PiInfo) GetStatus() piStatus {
-	return p.Status
-}
-
-func (p *PiInfo) GetSourceBakeform() bakeform {
-	return p.SourceBakeform
-}
-
-func (p *PiInfo) Unstuck() error {
-	p.Status = NOTINUSE
-	return p.Save()
 }
 
 func (p *PiInfo) doPpiAction(action string) error {
@@ -231,4 +194,26 @@ func (p *PiInfo) PowerCycle() error {
 	time.Sleep(1 * time.Second)
 
 	return p.doPpiAction("poweron")
+}
+
+func (p *PiInfo) AssociateDisk(dsk *disk) error {
+	p.Disks = append(p.Disks, dsk)
+	return p.Save()
+}
+
+func (p *PiInfo) UnassociateDisk(dsk *disk) error {
+	var dskIndex int
+	for i, d := range p.Disks {
+		if d == dsk {
+			dskIndex = i
+			break
+		}
+	}
+
+	if dskIndex == 0 {
+		return fmt.Errorf("Cannot unassociate boot volume")
+	}
+
+	p.Disks = append(p.Disks[:dskIndex], p.Disks[:dskIndex+1]...)
+	return p.Save()
 }

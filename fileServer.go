@@ -15,7 +15,8 @@ type fileServer interface {
 
 type FileServer struct {
 	nfs         fileBackend
-	piInventory piInventory
+	piInventory piManager
+	diskManager *diskManager
 }
 
 type templatevars struct {
@@ -24,10 +25,11 @@ type templatevars struct {
 	NfsRoot   string
 }
 
-func newFileServer(nfs fileBackend, inventory piInventory) (fileServer, error) {
+func newFileServer(nfs fileBackend, inventory piManager, dm *diskManager) (fileServer, error) {
 	return &FileServer{
 		nfs:         nfs,
 		piInventory: inventory,
+		diskManager: dm,
 	}, nil
 }
 
@@ -47,14 +49,14 @@ func (f *FileServer) fileHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if pi.GetStatus() == NOTINUSE {
+	if pi.Status == NOTINUSE {
 		//Pi is not in inventory or not in use. Then don't server files
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	//if filename == cmdline.txt then parse the template. else just serve the file
-	bootLocation := pi.GetSourceBakeform().GetBootLocation()
+	bootLocation := pi.SourceBakeform.GetBootLocation()
 	strings.Replace(bootLocation, "/", "", 1) //remove the first /
 	fullFilename := bootLocation + "/" + filename
 
@@ -65,10 +67,10 @@ func (f *FileServer) fileHandler(w http.ResponseWriter, r *http.Request) {
 
 		c := templatevars{
 			NfsServer: f.nfs.GetNfsAddress(),
-			NfsRoot:   pi.GetRootLocation(),
+			NfsRoot:   pi.Disks[0].Location,
 		}
 
-		fmt.Printf("%v requested for: %v\n", filename, pi.GetId())
+		fmt.Printf("%v requested for: %v\n", filename, pi.Id)
 		t, err := template.New("templatefile").ParseFiles(fullFilename)
 		if err != nil {
 			panic(err)
