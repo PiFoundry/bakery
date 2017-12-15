@@ -56,7 +56,7 @@ func (f *FileServer) fileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//if filename == cmdline.txt then parse the template. else just serve the file
-	bootLocation := pi.SourceBakeform.GetBootLocation()
+	bootLocation := pi.SourceBakeform.bootLocation
 	strings.Replace(bootLocation, "/", "", 1) //remove the first /
 	fullFilename := bootLocation + "/" + filename
 

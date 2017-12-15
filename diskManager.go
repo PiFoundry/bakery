@@ -48,8 +48,23 @@ func (dm *diskManager) RegisterDisk(id, location string) *disk {
 }
 
 func (dm *diskManager) NewDisk() (*disk, error) {
-	id := "disk-" + uuid.New().String()
+	id := uuid.New().String()
 	location, err := dm.fb.CreateNfsFolder(id)
+	if err != nil {
+		return &disk{}, err
+	}
+
+	return dm.RegisterDisk(id, location), nil
+}
+
+func (dm *diskManager) DiskFromBakeform(bf *Bakeform) (*disk, error) {
+	err := bf.mount()
+	if err != nil {
+		return &disk{}, err
+	}
+
+	id := uuid.New().String()
+	location, err := dm.fb.CopyNfsFolder(bf.MountedOn[1]+"/", id)
 	if err != nil {
 		return &disk{}, err
 	}

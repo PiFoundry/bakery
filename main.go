@@ -59,8 +59,8 @@ func main() {
 	r.Path("/api/v1/fridge").Methods(http.MethodPost).HandlerFunc(pile.BakeHandler)
 
 	r.Path("/api/v1/oven/{piId}/reboot").Methods(http.MethodPost).HandlerFunc(pile.RebootHandler)
-	r.Path("/api/v1/oven/{piId}/disks").Methods(http.MethodPost).HandlerFunc(pile.LinkDiskHandler)
-	r.Path("/api/v1/oven/{piId}/disks/{diskId}").Methods(http.MethodDelete).HandlerFunc(pile.UnlinkDiskHandler)
+	r.Path("/api/v1/oven/{piId}/disks").Methods(http.MethodPost).HandlerFunc(pile.AttachDiskHandler)
+	r.Path("/api/v1/oven/{piId}/disks/{diskId}").Methods(http.MethodDelete).HandlerFunc(pile.DetachDiskHandler)
 	r.Path("/api/v1/oven/{piId}").Methods(http.MethodGet).HandlerFunc(pile.GetPiHandler)
 	r.Path("/api/v1/oven/{piId}").Methods(http.MethodDelete).HandlerFunc(pile.UnbakeHandler)
 	r.Path("/api/v1/oven").Methods(http.MethodGet).HandlerFunc(pile.OvenHandler)

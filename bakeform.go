@@ -5,39 +5,20 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
-	"strings"
 	"syscall"
 	"time"
 )
-
-type bakeform interface {
-	GetName() string
-	GetBootLocation() string
-	GenerateRootLocation(pi PiInfo) string
-	Delete() error
-	mount() error
-	unmount() error
-	Deploy(pi PiInfo) (string, error)
-}
 
 type Bakeform struct {
 	Name         string `json:"name"`
 	Location     string `json:"location"`
 	mountRoot    string
-	nfs          fileBackend
+	fb           fileBackend
 	bootLocation string
-	MountedOn    []string `json:"mountedOn,omitempty"`
+	MountedOn    []string `json:"-"`
 }
 
-type BakeformList map[string]bakeform
-
-func (b *Bakeform) GetName() string {
-	return b.Name
-}
-
-func (b *Bakeform) GetBootLocation() string {
-	return b.bootLocation
-}
+type BakeformList map[string]*Bakeform
 
 func (b *Bakeform) Delete() error {
 	//TODO: Check if not in use
@@ -99,13 +80,14 @@ func (b *Bakeform) mount() error {
 }
 
 func (b *Bakeform) unmount() error {
-	for i, mountTarget := range b.MountedOn {
+	for _, mountTarget := range b.MountedOn {
 		fmt.Println("Unounting: " + mountTarget)
 		err := syscall.Unmount(mountTarget, 0)
 		if err != nil {
 			return err
 		}
-		b.MountedOn = append(b.MountedOn[:i], b.MountedOn[i+1:]...) //delete the mount point from the slice
+		//b.MountedOn = append(b.MountedOn[:i], b.MountedOn[i+1:]...) //delete the mount point from the slice
+		b.MountedOn = nil
 	}
 
 	//unmap devices
@@ -117,17 +99,7 @@ func (b *Bakeform) unmount() error {
 	return nil
 }
 
-func (b *Bakeform) GenerateRootLocation(pi PiInfo) string {
-	rootLoc := b.nfs.GetNfsRoot() + "/" + pi.Id
-	return strings.Replace(rootLoc, "//", "/", -1)
-}
-
-func (b *Bakeform) GenerateBootLocation() string {
-	bootLoc := b.nfs.GetBootRoot() + "/" + b.Name
-	return strings.Replace(bootLoc, "//", "/", -1)
-}
-
-func (b *Bakeform) Deploy(pi PiInfo) (string, error) {
+/*func (b *Bakeform) Deploy(pi PiInfo) (string, error) {
 	err := b.mount()
 	if err != nil {
 		return "", err
@@ -136,7 +108,7 @@ func (b *Bakeform) Deploy(pi PiInfo) (string, error) {
 	//copy root volume
 	source := b.MountedOn[1] + "/"
 	fmt.Printf("Cloning bakeform %v\n", b.Name)
-	rootLoc, err := b.nfs.CopyNfsFolder(source, pi.Id)
+	rootLoc, err := b.fb.CopyNfsFolder(source, pi.Id)
 	if err != nil {
 		return "", err
 	}
@@ -146,10 +118,10 @@ func (b *Bakeform) Deploy(pi PiInfo) (string, error) {
 	// check if exists first
 	if b.bootLocation == "" {
 		source := b.MountedOn[0] + "/"
-		b.bootLocation, err = b.nfs.CopyBootFolder(source, b.Name)
+		b.bootLocation, err = b.fb.CopyBootFolder(source, b.Name)
 		return "", err
 	}
 	///
 
 	return rootLoc, nil
-}
+}*/

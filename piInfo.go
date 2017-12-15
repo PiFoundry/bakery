@@ -23,17 +23,22 @@ type piList map[string]PiInfo
 
 type PiInfo struct {
 	db             *sql.DB
-	Id             string   `json:"id"`
-	Status         piStatus `json:"status"`
-	Disks          []*disk  `json:"disks,omitempty"`
-	SourceBakeform bakeform `json:"sourceBakeform,omitempty"`
+	Id             string    `json:"id"`
+	Status         piStatus  `json:"status"`
+	Disks          []*disk   `json:"disks,omitempty"`
+	SourceBakeform *Bakeform `json:"sourceBakeform,omitempty"`
+}
+
+func (p *PiInfo) SetStatus(status piStatus) error {
+	p.Status = status
+	return p.Save()
 }
 
 func (p *PiInfo) Save() error {
 	//fmt.Printf("Updating Pi with id: %v to status: %v\n", p.Id, p.Status)
 	bakeformString := ""
 	if p.SourceBakeform != nil {
-		bakeformString = p.SourceBakeform.GetName()
+		bakeformString = p.SourceBakeform.Name
 	}
 
 	_, err := p.db.Exec(fmt.Sprintf("insert into inventory(id, status, bakeform, diskIds) values('%v', %v, '%v', '%v')", p.Id, p.Status, bakeformString, ""))
@@ -60,7 +65,7 @@ func (p *PiInfo) Save() error {
 	return nil
 }
 
-func (p *PiInfo) Bake(image bakeform, dm *diskManager) error {
+/*func (p *PiInfo) Bake(image *Bakeform, dm *diskManager) error {
 	fmt.Printf("Baking pi with id: %v\n", p.Id)
 	//Set state to baking and Store State
 	p.Status = PREPARING
@@ -100,7 +105,7 @@ func (p *PiInfo) Bake(image bakeform, dm *diskManager) error {
 
 	fmt.Printf("Pi with id %v is ready!\n", p.Id)
 	return nil
-}
+}*/
 
 func (p *PiInfo) Unbake(dm *diskManager) error {
 	fmt.Printf("Unbaking pi with id: %v\n", p.Id)
@@ -196,12 +201,12 @@ func (p *PiInfo) PowerCycle() error {
 	return p.doPpiAction("poweron")
 }
 
-func (p *PiInfo) AssociateDisk(dsk *disk) error {
+func (p *PiInfo) AttachDisk(dsk *disk) error {
 	p.Disks = append(p.Disks, dsk)
 	return p.Save()
 }
 
-func (p *PiInfo) UnassociateDisk(dsk *disk) error {
+func (p *PiInfo) DetachDisk(dsk *disk) error {
 	var dskIndex int
 	for i, d := range p.Disks {
 		if d == dsk {

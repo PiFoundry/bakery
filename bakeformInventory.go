@@ -52,27 +52,37 @@ func (i *BakeformInventory) Load() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Loading images...")
+
 	list := make(BakeformList)
 
 	for _, img := range imgFiles {
 		nameParts := strings.Split(img, "/")
 		name := strings.Replace(nameParts[len(nameParts)-1], ".img", "", 1)
 
-		bootLocation := i.nfs.GetBootRoot() + "/" + name
-		_, err := os.Stat(bootLocation)
-		if os.IsNotExist(err) {
-			bootLocation = ""
-		}
-
-		fmt.Printf("Loaded image %v\n", name)
-		list[name] = &Bakeform{
+		fmt.Printf("Loading image %v\n", name)
+		bf := &Bakeform{
 			Name:         name,
 			Location:     img,
 			mountRoot:    i.mountRoot,
-			nfs:          i.nfs,
-			bootLocation: bootLocation,
+			fb:           i.nfs,
+			bootLocation: i.nfs.GetBootRoot() + "/" + name,
 		}
+
+		_, err := os.Stat(bf.bootLocation)
+		if os.IsNotExist(err) {
+			err := bf.mount()
+			if err != nil {
+				return err
+			}
+
+			_, err = i.nfs.CopyBootFolder(bf.MountedOn[0]+"/", name)
+			bf.unmount()
+			if err != nil {
+				return err
+			}
+		}
+
+		list[name] = bf
 	}
 
 	i.Content = list

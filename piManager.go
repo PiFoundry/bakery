@@ -19,15 +19,15 @@ type piManager interface {
 	GetPi(piId string) (PiInfo, error)
 	ListFridge() (piList, error)
 	ListOven() (piList, error)
-	BakePi(PiInfo, bakeform)
+	BakePi(PiInfo, *Bakeform)
 	BakeHandler(http.ResponseWriter, *http.Request)
 	UnbakeHandler(http.ResponseWriter, *http.Request)
 	GetPiHandler(w http.ResponseWriter, r *http.Request)
 	OvenHandler(w http.ResponseWriter, r *http.Request)
 	FridgeHandler(w http.ResponseWriter, r *http.Request)
 	RebootHandler(w http.ResponseWriter, r *http.Request)
-	LinkDiskHandler(w http.ResponseWriter, r *http.Request)
-	UnlinkDiskHandler(w http.ResponseWriter, r *http.Request)
+	AttachDiskHandler(w http.ResponseWriter, r *http.Request)
+	DetachDiskHandler(w http.ResponseWriter, r *http.Request)
 }
 
 type PiManager struct {
@@ -129,20 +129,53 @@ func (i *PiManager) ListOven() (piList, error) {
 	return nil, err
 }
 
-func (pm *PiManager) BakePi(pi PiInfo, bf bakeform) {
+func (pm *PiManager) BakePi(pi PiInfo, bf *Bakeform) {
 	if _, exists := pm.piProvisionMutexes[pi.Id]; !exists {
 		pm.piProvisionMutexes[pi.Id] = &sync.Mutex{}
 	}
 	pm.piProvisionMutexes[pi.Id].Lock()
 	defer pm.piProvisionMutexes[pi.Id].Unlock()
 
-	err := pi.Bake(bf, pm.diskManager)
+	//update the status to PREPARING
+	if err := pi.SetStatus(PREPARING); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	//Deploy the disk from image
+	fmt.Println("Cloning bakeform...")
+	dsk, err := pm.diskManager.DiskFromBakeform(bf)
 	if err != nil {
 		fmt.Println(err.Error())
+		pi.SetStatus(NOTINUSE)
+		return
 	}
+
+	//Attach the disk to the pi
+	fmt.Println("Attaching cloned disk")
+	err = pi.AttachDisk(dsk)
+	if err != nil {
+		fmt.Println(err.Error())
+		pm.diskManager.DestroyDisk(dsk.ID)
+		pi.SetStatus(NOTINUSE)
+		return
+	}
+
+	pi.Status = INUSE
+	pi.SourceBakeform = bf
+	pi.Save()
+
+	fmt.Println("Power Cycling Pi " + pi.Id)
+	err = pi.PowerCycle()
+	if err != nil {
+		fmt.Printf("Pi %v is ready but could not be power cycled. error: %v", pi.Id, err.Error())
+		return
+	}
+
+	fmt.Printf("Pi with id %v is ready!\n", pi.Id)
 }
 
-func (pm *PiManager) UnbakePi(pi *PiInfo, bf bakeform) {
+func (pm *PiManager) UnbakePi(pi *PiInfo, bf *Bakeform) {
 	if _, exists := pm.piProvisionMutexes[pi.Id]; !exists {
 		pm.piProvisionMutexes[pi.Id] = &sync.Mutex{}
 	}
@@ -275,7 +308,7 @@ func (i *PiManager) GetPiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 }
@@ -284,6 +317,7 @@ func (i *PiManager) OvenHandler(w http.ResponseWriter, r *http.Request) {
 	piList, err := i.ListOven()
 
 	if err != nil {
+		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -330,7 +364,7 @@ func (i *PiManager) RebootHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (pm *PiManager) LinkDiskHandler(w http.ResponseWriter, r *http.Request) {
+func (pm *PiManager) AttachDiskHandler(w http.ResponseWriter, r *http.Request) {
 	var associateRequest struct {
 		DiskId string `json:"diskId"`
 	}
@@ -360,7 +394,7 @@ func (pm *PiManager) LinkDiskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = pi.AssociateDisk(dsk)
+	err = pi.AttachDisk(dsk)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("error associating disk"))
@@ -368,7 +402,7 @@ func (pm *PiManager) LinkDiskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (pm *PiManager) UnlinkDiskHandler(w http.ResponseWriter, r *http.Request) {
+func (pm *PiManager) DetachDiskHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	piId := params["pidId"]
 	diskId := params["diskId"]
@@ -387,5 +421,5 @@ func (pm *PiManager) UnlinkDiskHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = pi.UnassociateDisk(dsk)
+	err = pi.DetachDisk(dsk)
 }
