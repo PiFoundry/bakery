@@ -73,10 +73,7 @@ func (dm *diskManager) DiskFromBakeform(bf *Bakeform) (*disk, error) {
 }
 
 func (dm *diskManager) DestroyDisk(id string) error {
-	/*	_, err := uuid.FromBytes([]byte(strings.Replace(id, "disk-", "", 1)))
-		if !strings.HasPrefix(id, "disk-") || err != nil {
-			return fmt.Errorf("No valid disk ID given")
-		}*/
+	//TODO check if realy destroying a diks, nog something elsel.... check if id == uuid fe
 	delete(dm.Disks, id)
 	return dm.fb.DeleteNfsFolder(id)
 }

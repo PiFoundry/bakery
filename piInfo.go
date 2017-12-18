@@ -35,7 +35,6 @@ func (p *PiInfo) SetStatus(status piStatus) error {
 }
 
 func (p *PiInfo) Save() error {
-	//fmt.Printf("Updating Pi with id: %v to status: %v\n", p.Id, p.Status)
 	bakeformString := ""
 	if p.SourceBakeform != nil {
 		bakeformString = p.SourceBakeform.Name
@@ -64,48 +63,6 @@ func (p *PiInfo) Save() error {
 
 	return nil
 }
-
-/*func (p *PiInfo) Bake(image *Bakeform, dm *diskManager) error {
-	fmt.Printf("Baking pi with id: %v\n", p.Id)
-	//Set state to baking and Store State
-	p.Status = PREPARING
-	p.SourceBakeform = image
-	err := p.Save()
-	if err != nil {
-		return err
-	}
-
-	//Create and fill system NFS export
-	diskLoc, err := image.Deploy(*p)
-	if err != nil {
-		fmt.Println(err.Error())
-		p.Status = NOTINUSE
-		p.SourceBakeform = nil
-		p.Save()
-		return err
-	}
-
-	//Register the newly created root disk
-	regDisk := dm.RegisterDisk(p.Id, diskLoc)
-
-	//Set state to INUSE and Store disks
-	p.Status = INUSE
-	p.Disks[0] = regDisk
-	err = p.Save()
-	if err != nil {
-		fmt.Println(err.Error())
-		return err
-	}
-
-	err = p.PowerCycle()
-	if err != nil {
-		fmt.Println(err.Error())
-		return err
-	}
-
-	fmt.Printf("Pi with id %v is ready!\n", p.Id)
-	return nil
-}*/
 
 func (p *PiInfo) Unbake(dm *diskManager) error {
 	fmt.Printf("Unbaking pi with id: %v\n", p.Id)

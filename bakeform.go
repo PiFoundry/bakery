@@ -98,30 +98,3 @@ func (b *Bakeform) unmount() error {
 
 	return nil
 }
-
-/*func (b *Bakeform) Deploy(pi PiInfo) (string, error) {
-	err := b.mount()
-	if err != nil {
-		return "", err
-	}
-
-	//copy root volume
-	source := b.MountedOn[1] + "/"
-	fmt.Printf("Cloning bakeform %v\n", b.Name)
-	rootLoc, err := b.fb.CopyNfsFolder(source, pi.Id)
-	if err != nil {
-		return "", err
-	}
-	///
-
-	//copy boot volume
-	// check if exists first
-	if b.bootLocation == "" {
-		source := b.MountedOn[0] + "/"
-		b.bootLocation, err = b.fb.CopyBootFolder(source, b.Name)
-		return "", err
-	}
-	///
-
-	return rootLoc, nil
-}*/
