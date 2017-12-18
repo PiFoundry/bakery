@@ -145,7 +145,14 @@ func (i *BakeformInventory) DeleteHandler(w http.ResponseWriter, r *http.Request
 	urlvars := mux.Vars(r)
 	name := urlvars["name"]
 
-	err := i.Content[name].Delete()
+	bf, exists := i.Content[name]
+	if !exists {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Bakeform not found"))
+		return
+	}
+
+	err := bf.Delete()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
