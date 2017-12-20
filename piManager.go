@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 
@@ -28,6 +29,7 @@ type piManager interface {
 	RebootHandler(w http.ResponseWriter, r *http.Request)
 	AttachDiskHandler(w http.ResponseWriter, r *http.Request)
 	DetachDiskHandler(w http.ResponseWriter, r *http.Request)
+	UploadHandler(w http.ResponseWriter, r *http.Request)
 }
 
 type PiManager struct {
@@ -100,7 +102,6 @@ func (i *PiManager) GetPi(piId string) (PiInfo, error) {
 		}
 
 		diskIds := strings.Split(diskIdsString, ",")
-		fmt.Println(diskIds)
 		for _, diskId := range diskIds {
 			pi.Disks = append(pi.Disks, i.diskManager.Disks[diskId])
 		}
@@ -422,4 +423,42 @@ func (pm *PiManager) DetachDiskHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = pi.DetachDisk(dsk)
+}
+
+func (pm *PiManager) UploadHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	params := mux.Vars(r)
+	piId := params["piId"]
+	filename := path.Join("piConfig/", params["filename"])
+
+	pi, err := pm.GetPi(piId)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Pi not found"))
+		return
+	}
+
+	content, _ := ioutil.ReadAll(r.Body)
+
+	if pi.Status != INUSE || len(pi.Disks) == 0 {
+		w.WriteHeader(http.StatusNotExtended)
+		w.Write([]byte("Pi not in ready state"))
+	}
+
+	//Lock the povisioning mutex to prevent the pi from disappearing while we put a file
+	if _, exists := pm.piProvisionMutexes[pi.Id]; !exists {
+		pm.piProvisionMutexes[pi.Id] = &sync.Mutex{}
+	}
+	pm.piProvisionMutexes[pi.Id].Lock()
+	defer pm.piProvisionMutexes[pi.Id].Unlock()
+
+	diskId := pi.Disks[0].ID
+	err = pm.diskManager.PutFileOnDisk(diskId, filename, content)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error putting file on disk: " + err.Error()))
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

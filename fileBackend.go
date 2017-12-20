@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -14,7 +15,7 @@ type fileBackend interface {
 	GetNfsRoot() string
 	GetNfsAddress() string
 	GetBootRoot() string
-	//CopyFolder(string, string) error
+	PutFileInNfsFolder(filePath string, content []byte) error
 	CreateNfsFolder(string) (string, error)
 	DeleteNfsFolder(string) error
 	GetNfsFolders(string) []string
@@ -61,6 +62,17 @@ func (f *FileBackend) copyFolder(s, d string) error {
 	}
 
 	return nil
+}
+
+func (f *FileBackend) PutFileInNfsFolder(filePath string, content []byte) error {
+	fullFilePath := path.Join(f.nfsRoot, filePath)
+	dir, _ := path.Split(fullFilePath)
+	err := os.MkdirAll(dir, 0666)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(fullFilePath, content, 0666)
 }
 
 func (f *FileBackend) CopyBootFolder(s, dest string) (string, error) {

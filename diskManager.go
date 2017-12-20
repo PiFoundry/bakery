@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/google/uuid"
@@ -73,9 +75,21 @@ func (dm *diskManager) DiskFromBakeform(bf *Bakeform) (*disk, error) {
 }
 
 func (dm *diskManager) DestroyDisk(id string) error {
-	//TODO check if realy destroying a diks, nog something elsel.... check if id == uuid fe
+	//TODO check if realy destroying a diks, not something else.... check if id == uuid fe
 	delete(dm.Disks, id)
 	return dm.fb.DeleteNfsFolder(id)
+}
+
+func (dm *diskManager) PutFileOnDisk(diskId, filePath string, content []byte) error {
+	disk, exists := dm.Disks[diskId]
+	if !exists {
+		return fmt.Errorf("Disk with id %v not found", diskId)
+	}
+
+	file := path.Join(disk.ID, filePath)
+	dm.fb.PutFileInNfsFolder(file, content)
+
+	return nil
 }
 
 func (dm *diskManager) createDiskHandler(w http.ResponseWriter, r *http.Request) {
