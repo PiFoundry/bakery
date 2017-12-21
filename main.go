@@ -52,6 +52,8 @@ func main() {
 		panic(err.Error())
 	}
 
+	//TODO: restore powerstate on startup
+
 	r := mux.NewRouter()
 	r.Path("/api/v1/files/{piId}/{filename}").Methods(http.MethodGet).HandlerFunc(fs.fileHandler) //Generates files for net booting
 

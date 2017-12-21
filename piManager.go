@@ -137,6 +137,8 @@ func (pm *PiManager) BakePi(pi PiInfo, bf *Bakeform) {
 	pm.piProvisionMutexes[pi.Id].Lock()
 	defer pm.piProvisionMutexes[pi.Id].Unlock()
 
+	fmt.Printf("Baking pi: %v\n", pi.Id)
+
 	//update the status to PREPARING
 	if err := pi.SetStatus(PREPARING); err != nil {
 		fmt.Println(err)
@@ -165,13 +167,6 @@ func (pm *PiManager) BakePi(pi PiInfo, bf *Bakeform) {
 	pi.Status = INUSE
 	pi.SourceBakeform = bf
 	pi.Save()
-
-	fmt.Println("Power Cycling Pi " + pi.Id)
-	err = pi.PowerCycle()
-	if err != nil {
-		fmt.Printf("Pi %v is ready but could not be power cycled. error: %v", pi.Id, err.Error())
-		return
-	}
 
 	fmt.Printf("Pi with id %v is ready!\n", pi.Id)
 }
@@ -318,8 +313,8 @@ func (i *PiManager) OvenHandler(w http.ResponseWriter, r *http.Request) {
 	piList, err := i.ListOven()
 
 	if err != nil {
-		w.Write([]byte(err.Error()))
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 
