@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 
 	"github.com/gorilla/mux"
 )
@@ -22,10 +23,10 @@ func main() {
 		panic("NFS_ADDRESS env var not set")
 	}
 
-	nfsRoot := bakeryRoot + "/nfs/"
-	imageFolder := bakeryRoot + "/bakeforms/"
-	bootFolder := bakeryRoot + "/boot/"
-	mountRoot := bakeryRoot + "/mnt"
+	nfsRoot := path.Join(bakeryRoot, "/nfs/")
+	imageFolder := path.Join(bakeryRoot, "/bakeforms/")
+	bootFolder := path.Join(bakeryRoot, "/boot/")
+	mountRoot := path.Join(bakeryRoot, "/mnt")
 
 	initFolders(nfsRoot, imageFolder, bootFolder, mountRoot)
 
@@ -52,7 +53,13 @@ func main() {
 		panic(err.Error())
 	}
 
-	//TODO: restore powerstate on startup
+	pis, err := pile.ListOven()
+	for _, pi := range pis {
+		err = pi.PowerOn()
+		if err != nil {
+			fmt.Println("Could not restore powerstate of rPi with ID:" + pi.Id)
+		}
+	}
 
 	r := mux.NewRouter()
 	r.Path("/api/v1/files/{piId}/{filename}").Methods(http.MethodGet).HandlerFunc(fs.fileHandler) //Generates files for net booting
