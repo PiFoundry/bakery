@@ -47,6 +47,7 @@ func (f *FileServer) fileHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
+		pi.PowerOff()
 	}
 
 	if pi.Status == NOTINUSE {
