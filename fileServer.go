@@ -47,7 +47,10 @@ func (f *FileServer) fileHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			panic(err)
 		}
-		pi.PowerOff()
+		err = pi.PowerOff()
+		if err != nil {
+			fmt.Println("A new Pi just came online, We put in in the inventory for you but I can't control its power state. Error:" + err.Error())
+		}
 	}
 
 	if pi.Status == NOTINUSE {
