@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 
@@ -49,11 +50,29 @@ func (dm *diskManager) RegisterDisk(id, location string) *disk {
 	return dm.Disks[id]
 }
 
-func (dm *diskManager) NewDisk() (*disk, error) {
+func (dm *diskManager) NewDisk(size int) (*disk, error) {
+	if size <= 0 {
+		return nil, fmt.Errorf("Disk size should be larger than 0.")
+	}
+
 	id := uuid.New().String()
 	location, err := dm.fb.CreateNfsFolder(id)
 	if err != nil {
 		return &disk{}, err
+	}
+
+	//Create disk file
+	sizeInBytes := int64(size * 1024 * 1024)
+	fd, err := os.Create(path.Join(location, "disk.img"))
+	defer fd.Close()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to create output")
+	}
+
+	fd.Seek(sizeInBytes-1, 0)
+	_, err = fd.Write([]byte{0})
+	if err != nil {
+		return nil, fmt.Errorf("Write failed")
 	}
 
 	return dm.RegisterDisk(id, location), nil
@@ -93,7 +112,17 @@ func (dm *diskManager) PutFileOnDisk(diskId, filePath string, content []byte) er
 }
 
 func (dm *diskManager) createDiskHandler(w http.ResponseWriter, r *http.Request) {
-	disk, err := dm.NewDisk()
+	var params struct {
+		Size int `json:"size"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&params)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	disk, err := dm.NewDisk(params.Size)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write(([]byte(err.Error())))

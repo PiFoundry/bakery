@@ -53,11 +53,12 @@ func main() {
 		panic(err.Error())
 	}
 
+	fmt.Println("Restoring power state")
 	pis, err := pile.ListOven()
 	for _, pi := range pis {
 		err = pi.PowerOn()
 		if err != nil {
-			fmt.Println("Could not restore powerstate of rPi with ID:" + pi.Id)
+			fmt.Println("Could not restore power state of rPi with ID:" + pi.Id)
 		}
 	}
 
