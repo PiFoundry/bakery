@@ -222,8 +222,7 @@ func (pm *PiManager) BakeHandler(w http.ResponseWriter, r *http.Request) {
 
 	//parse the post body
 	var params bakeRequest
-	body, _ := ioutil.ReadAll(r.Body)
-	err := json.Unmarshal(body, &params)
+	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 	}
