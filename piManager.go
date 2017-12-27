@@ -364,11 +364,10 @@ func (pm *PiManager) AttachDiskHandler(w http.ResponseWriter, r *http.Request) {
 		DiskId string `json:"diskId"`
 	}
 
-	piId := mux.Vars(r)["piId"]
-	bodyBytes, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 
-	err := json.Unmarshal(bodyBytes, &associateRequest)
+	piId := mux.Vars(r)["piId"]
+	err := json.NewDecoder(r.Body).Decode(&associateRequest)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Error parsing posted data"))
