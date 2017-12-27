@@ -20,6 +20,7 @@ type diskManager struct {
 type disk struct {
 	ID       string `json:"id"`
 	Location string `json:"location"`
+	Size     int64  `json:"size"`
 }
 
 func NewDiskManager(fb fileBackend) (*diskManager, error) {
@@ -32,19 +33,35 @@ func NewDiskManager(fb fileBackend) (*diskManager, error) {
 	for _, diskFolder := range diskFolders {
 		nameParts := strings.Split(diskFolder, "/")
 		id := nameParts[len(nameParts)-1]
+
 		dm.Disks[id] = &disk{
 			ID:       id,
 			Location: diskFolder,
+			Size:     dm.getDiskSize(diskFolder),
 		}
 	}
 
 	return dm, nil
 }
 
+func (dm *diskManager) getDiskSize(location string) int64 {
+	var size int64 = 0
+	f, err := os.Open(path.Join(location, "disk.img"))
+	if err == nil {
+		fs, err := f.Stat()
+		if err == nil {
+			size = fs.Size() / 1024 / 1024
+		}
+	}
+
+	return size
+}
+
 func (dm *diskManager) RegisterDisk(id, location string) *disk {
 	dm.Disks[id] = &disk{
 		ID:       id,
 		Location: location,
+		Size:     dm.getDiskSize(location),
 	}
 
 	return dm.Disks[id]
