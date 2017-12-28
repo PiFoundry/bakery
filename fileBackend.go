@@ -132,6 +132,6 @@ func (f *FileBackend) regenNfsExports() error {
 		return err
 	}
 
-	//	_, err = exec.Command("exportfs", "-a").CombinedOutput()
+	_, err = exec.Command("exportfs", "-a").CombinedOutput()
 	return err
 }
