@@ -69,7 +69,7 @@ func (dm *diskManager) RegisterDisk(id, location string) *disk {
 
 func (dm *diskManager) NewDisk(size int) (*disk, error) {
 	if size <= 0 {
-		return nil, fmt.Errorf("Disk size should be larger than 0.")
+		return nil, fmt.Errorf("Disk size should be larger than 0")
 	}
 
 	id := uuid.New().String()
@@ -83,7 +83,7 @@ func (dm *diskManager) NewDisk(size int) (*disk, error) {
 	fd, err := os.Create(path.Join(location, "disk.img"))
 	defer fd.Close()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create output")
+		return nil, fmt.Errorf("Failed to create disk")
 	}
 
 	fd.Seek(sizeInBytes-1, 0)

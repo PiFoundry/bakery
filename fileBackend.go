@@ -15,6 +15,7 @@ type fileBackend interface {
 	GetNfsAddress() string
 	GetBootRoot() string
 	PutFileInNfsFolder(filePath string, content []byte) error
+	MoveFilesToFolder(glob, dest string) error
 	CreateNfsFolder(string) (string, error)
 	DeleteNfsFolder(string) error
 	GetNfsFolders(string) []string
