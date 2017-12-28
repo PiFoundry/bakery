@@ -15,7 +15,6 @@ type fileBackend interface {
 	GetNfsAddress() string
 	GetBootRoot() string
 	PutFileInNfsFolder(filePath string, content []byte) error
-	MoveFilesToFolder(glob, dest string) error
 	CreateNfsFolder(string) (string, error)
 	DeleteNfsFolder(string) error
 	GetNfsFolders(string) []string
@@ -109,17 +108,6 @@ func (f *FileBackend) DeleteNfsFolder(d string) error {
 		return err
 	}
 	return f.regenNfsExports()
-}
-
-func (f *FileBackend) MoveFilesToFolder(glob, dest string) error {
-	files, _ := filepath.Glob(glob)
-	for _, file := range files {
-		err := os.Rename(file, dest+"/")
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (f *FileBackend) GetNfsFolders(pattern string) []string {

@@ -81,12 +81,6 @@ func (i *BakeformInventory) Load() error {
 			if err != nil {
 				return err
 			}
-
-			//check if there is a firmware folder in the boot
-			_, err = os.Stat(path.Join(bf.bootLocation, "firmware"))
-			if os.IsExist(err) {
-				err = i.nfs.MoveFilesToFolder(path.Join(bf.bootLocation, "firmware", "*"), bf.bootLocation)
-			}
 		}
 
 		list[name] = bf
