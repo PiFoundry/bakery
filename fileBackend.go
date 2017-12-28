@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -76,14 +75,14 @@ func (f *FileBackend) PutFileInNfsFolder(filePath string, content []byte) error 
 }
 
 func (f *FileBackend) CopyBootFolder(s, dest string) (string, error) {
-	d := f.bootRoot + "/" + dest
-	d = strings.Replace(d, "//", "/", -1)
+	d := path.Join(f.bootRoot, dest)
+	//d = strings.Replace(d, "//", "/", -1)
 	return d, f.copyFolder(s, d)
 }
 
 func (f *FileBackend) CopyNfsFolder(s, dest string) (string, error) {
-	d := f.nfsRoot + "/" + dest
-	d = strings.Replace(d, "//", "/", -1)
+	d := path.Join(f.nfsRoot, dest)
+	//d = strings.Replace(d, "//", "/", -1)
 	err := f.copyFolder(s, d)
 	if err != nil {
 		return "", err
@@ -93,7 +92,7 @@ func (f *FileBackend) CopyNfsFolder(s, dest string) (string, error) {
 }
 
 func (f *FileBackend) CreateNfsFolder(d string) (string, error) {
-	location := f.nfsRoot + "/" + d
+	location := path.Join(f.nfsRoot, d)
 	err := os.Mkdir(location, 0644)
 	if err != nil {
 		return "", err
@@ -103,7 +102,7 @@ func (f *FileBackend) CreateNfsFolder(d string) (string, error) {
 }
 
 func (f *FileBackend) DeleteNfsFolder(d string) error {
-	location := f.nfsRoot + "/" + d
+	location := path.Join(f.nfsRoot, d)
 	err := os.RemoveAll(location)
 	if err != nil {
 		return err
@@ -111,8 +110,19 @@ func (f *FileBackend) DeleteNfsFolder(d string) error {
 	return f.regenNfsExports()
 }
 
+func (f *FileBackend) MoveFilesToFolder(glob, dest string) error {
+	files, _ := filepath.Glob(glob)
+	for _, file := range files {
+		err := os.Rename(file, dest+"/")
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (f *FileBackend) GetNfsFolders(pattern string) []string {
-	files, _ := filepath.Glob(f.nfsRoot + "/" + pattern)
+	files, _ := filepath.Glob(path.Join(f.nfsRoot, pattern))
 	return files
 }
 

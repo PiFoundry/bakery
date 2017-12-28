@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -65,7 +66,7 @@ func (i *BakeformInventory) Load() error {
 			Location:     img,
 			mountRoot:    i.mountRoot,
 			fb:           i.nfs,
-			bootLocation: i.nfs.GetBootRoot() + "/" + name,
+			bootLocation: path.Join(i.nfs.GetBootRoot(), name),
 		}
 
 		_, err := os.Stat(bf.bootLocation)
