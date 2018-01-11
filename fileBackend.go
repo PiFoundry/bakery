@@ -15,6 +15,7 @@ type fileBackend interface {
 	GetNfsAddress() string
 	GetBootRoot() string
 	PutFileInNfsFolder(filePath string, content []byte) error
+	GetFileFromNfsFolder(filePath string) ([]byte, error)
 	CreateNfsFolder(string) (string, error)
 	DeleteNfsFolder(string) error
 	GetNfsFolders(string) []string
@@ -72,6 +73,12 @@ func (f *FileBackend) PutFileInNfsFolder(filePath string, content []byte) error 
 	}
 
 	return ioutil.WriteFile(fullFilePath, content, 0666)
+}
+
+func (f *FileBackend) GetFileFromNfsFolder(filePath string) ([]byte, error) {
+	fullFilePath := path.Join(f.nfsRoot, filePath)
+
+	return ioutil.ReadFile(fullFilePath)
 }
 
 func (f *FileBackend) CopyBootFolder(s, dest string) (string, error) {

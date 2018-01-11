@@ -131,6 +131,16 @@ func (dm *diskManager) PutFileOnDisk(diskId, filePath string, content []byte) er
 	return nil
 }
 
+func (dm *diskManager) GetFileFromDisk(diskId, filePath string) ([]byte, error) {
+	disk, exists := dm.Disks[diskId]
+	if !exists {
+		return nil, fmt.Errorf("Disk with id %v not found", diskId)
+	}
+
+	file := path.Join(disk.ID, filePath)
+	return dm.fb.GetFileFromNfsFolder(file)
+}
+
 func (dm *diskManager) createDiskHandler(w http.ResponseWriter, r *http.Request) {
 	var params struct {
 		Size int `json:"size"`

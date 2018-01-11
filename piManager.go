@@ -30,6 +30,7 @@ type piManager interface {
 	AttachDiskHandler(w http.ResponseWriter, r *http.Request)
 	DetachDiskHandler(w http.ResponseWriter, r *http.Request)
 	UploadHandler(w http.ResponseWriter, r *http.Request)
+	DownloadHandler(w http.ResponseWriter, r *http.Request)
 }
 
 type PiManager struct {
@@ -454,4 +455,31 @@ func (pm *PiManager) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (pm *PiManager) DownloadHandler(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	params := mux.Vars(r)
+	piId := params["piId"]
+	filename := path.Join("piConfig/", params["filename"])
+
+	pi, err := pm.GetPi(piId)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("Pi not found"))
+		return
+	}
+
+	diskId := pi.Disks[0].ID
+
+	content, err := pm.diskManager.GetFileFromDisk(diskId, filename)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error getting file from disk: " + err.Error()))
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Write(content)
 }
