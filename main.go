@@ -58,7 +58,7 @@ func main() {
 	for _, pi := range pis {
 		err = pi.PowerOn()
 		if err != nil {
-			fmt.Println("Could not restore power state of rPi with ID:" + pi.Id)
+			fmt.Printf("Could not restore power state of rPi with ID: %v. %v\n", pi.Id, err)
 		}
 	}
 
