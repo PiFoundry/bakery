@@ -22,8 +22,17 @@ type BakeformList map[string]*Bakeform
 
 func (b *Bakeform) Delete() error {
 	//TODO: Check if not in use
-	//TODO: Delete boot folder as well
-	b.unmount()
+
+	err := b.unmount()
+	if err != nil {
+		return fmt.Errorf("Unable to unmount image. %v", err)
+	}
+
+	err = os.RemoveAll(b.bootLocation)
+	if err != nil {
+		fmt.Printf("Unable to remove bootlocation.Deleting image anyways.")
+	}
+
 	return os.Remove(b.Location)
 }
 
