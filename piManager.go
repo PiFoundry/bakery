@@ -399,7 +399,7 @@ func (pm *PiManager) AttachDiskHandler(w http.ResponseWriter, r *http.Request) {
 
 func (pm *PiManager) DetachDiskHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	piId := params["pidId"]
+	piId := params["piId"]
 	diskId := params["diskId"]
 
 	pi, err := pm.GetPi(piId)
