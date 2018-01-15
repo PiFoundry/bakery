@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -30,7 +31,7 @@ func (b *Bakeform) Delete() error {
 
 	err = os.RemoveAll(b.bootLocation)
 	if err != nil {
-		fmt.Printf("Unable to remove bootlocation.Deleting image anyways.")
+		log.Printf("Unable to remove bootlocation.Deleting image anyways.")
 	}
 
 	return os.Remove(b.Location)
@@ -73,7 +74,7 @@ func (b *Bakeform) mount() error {
 			}
 		}
 
-		fmt.Printf("Mounting %v on %v\n", loopDevice, mountTarget)
+		log.Printf("Mounting %v on %v\n", loopDevice, mountTarget)
 		err = syscall.Mount(loopDevice, mountTarget, "vfat", 0, "")
 		if err != nil && err.Error() != "device or resource busy" { //already mounted if this error occurs. Just continue :){
 			err = syscall.Mount(loopDevice, mountTarget, "ext4", 0, "")
@@ -90,7 +91,7 @@ func (b *Bakeform) mount() error {
 
 func (b *Bakeform) unmount() error {
 	for _, mountTarget := range b.MountedOn {
-		fmt.Println("Unounting: " + mountTarget)
+		log.Println("Unounting: " + mountTarget)
 		err := syscall.Unmount(mountTarget, 0)
 		if err != nil {
 			return err

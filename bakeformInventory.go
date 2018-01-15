@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -60,7 +61,7 @@ func (i *BakeformInventory) Load() error {
 		nameParts := strings.Split(img, "/")
 		name := strings.Replace(nameParts[len(nameParts)-1], ".img", "", 1)
 
-		fmt.Printf("Loading image %v\n", name)
+		log.Printf("Loading image %v\n", name)
 		bf := &Bakeform{
 			Name:         name,
 			Location:     img,
@@ -116,7 +117,7 @@ func (i *BakeformInventory) UploadHandler(w http.ResponseWriter, r *http.Request
 	name := urlvars["name"]
 	filepath := i.folder + "/" + name + ".img"
 
-	fmt.Println("Receiving upload: " + filepath)
+	log.Println("Receiving upload: " + filepath)
 
 	file, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {

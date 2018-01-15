@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -16,11 +17,11 @@ func main() {
 	nfsServer := os.Getenv("NFS_ADDRESS")
 
 	if bakeryRoot == "" {
-		panic("BAKERY_ROOT env var not set")
+		log.Fatalln("BAKERY_ROOT env var not set")
 	}
 
 	if nfsServer == "" {
-		panic("NFS_ADDRESS env var not set")
+		log.Fatalln("NFS_ADDRESS env var not set")
 	}
 
 	nfsRoot := path.Join(bakeryRoot, "/nfs/")
@@ -32,33 +33,33 @@ func main() {
 
 	fb, err := newFileBackend(nfsServer, nfsRoot, bootFolder)
 	if err != nil {
-		panic(err)
+		log.Fatalln(err.Error())
 	}
 
 	diskmgr, err := NewDiskManager(fb)
 
 	bakeforms, err := newBakeformInventory(imageFolder, mountRoot, fb)
 	if err != nil {
-		panic(err.Error())
+		log.Fatalln(err.Error())
 	}
 	defer bakeforms.UnmountAll()
 
 	pile, err := NewPiManager(bakeforms, diskmgr)
 	if err != nil {
-		panic(err.Error())
+		log.Fatalln(err.Error())
 	}
 
 	fs, err := newFileServer(fb, pile, diskmgr)
 	if err != nil {
-		panic(err.Error())
+		log.Fatalln(err.Error())
 	}
 
-	fmt.Println("Restoring power state")
+	log.Println("Restoring power state")
 	pis, err := pile.ListOven()
 	for _, pi := range pis {
 		err = pi.PowerOn()
 		if err != nil {
-			fmt.Printf("Could not restore power state of rPi with ID: %v. %v\n", pi.Id, err)
+			log.Printf("Could not restore power state of rPi with ID: %v. %v\n", pi.Id, err)
 		}
 	}
 
@@ -86,6 +87,7 @@ func main() {
 	r.Path("/api/v1/disks").Methods(http.MethodPost).HandlerFunc(diskmgr.createDiskHandler)
 	r.Path("/api/v1/disks").Methods(http.MethodGet).HandlerFunc(diskmgr.listDisksHandler)
 
-	fmt.Println("Ready to bake!")
+	log.Println("Ready to bake!")
 	http.ListenAndServe(fmt.Sprintf(":%v", httpPort), r)
+
 }

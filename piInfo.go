@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os/exec"
 	"strings"
 	"time"
@@ -65,10 +66,10 @@ func (p *PiInfo) Save() error {
 }
 
 func (p *PiInfo) Unbake(dm *diskManager) error {
-	fmt.Printf("Unbaking pi with id: %v\n", p.Id)
+	log.Printf("Unbaking pi with id: %v\n", p.Id)
 	err := p.PowerOff()
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		return err
 	}
 
@@ -85,10 +86,10 @@ func (p *PiInfo) Unbake(dm *diskManager) error {
 
 	//delete attached disks (including root)
 	for _, d := range disks {
-		fmt.Println("Destroying disk: " + d.Location)
+		log.Println("Destroying disk: " + d.Location)
 		err := dm.DestroyDisk(d.ID)
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err.Error())
 		}
 	}
 
@@ -132,7 +133,7 @@ func (p *PiInfo) doPpiAction(action string) error {
 
 	err = ppicmd.Wait()
 	if err != nil || len(outerr) != 0 || string(out) != "ok" {
-		//fmt.Printf("ppi output: %v/%v", string(outerr), string(out))
+		//log.Printf("ppi output: %v/%v", string(outerr), string(out))
 		return fmt.Errorf("%v %v", string(outerr), string(out))
 	}
 

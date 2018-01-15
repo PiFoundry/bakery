@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"path"
 
@@ -41,7 +41,7 @@ func (f *FileServer) fileHandler(w http.ResponseWriter, r *http.Request) {
 	//check if piId is allready registered. If not then register.
 	pi, err := f.piInventory.GetPi(piId)
 	if err != nil {
-		fmt.Println("Pi not found in inventory. Putting a new one in the fridge.")
+		log.Println("Pi not found in inventory. Putting a new one in the fridge.")
 		pi = f.piInventory.NewPi(piId)
 		err = pi.Save()
 		if err != nil {
@@ -51,10 +51,10 @@ func (f *FileServer) fileHandler(w http.ResponseWriter, r *http.Request) {
 
 	if pi.Status == NOTINUSE {
 		//Pi is not in inventory or not in use. Then don't serve files and power it off
-		fmt.Printf("Pi %v came online but it's not in use. Powering it off\n", pi.Id)
+		log.Printf("Pi %v came online but it's not in use. Powering it off\n", pi.Id)
 		err = pi.PowerOff()
 		if err != nil {
-			fmt.Println("A Pi just came online but I can't control its power state. Error:" + err.Error())
+			log.Println("A Pi just came online but I can't control its power state. Error:" + err.Error())
 		}
 		w.WriteHeader(http.StatusNotFound)
 		return
@@ -75,7 +75,7 @@ func (f *FileServer) fileHandler(w http.ResponseWriter, r *http.Request) {
 			NfsRoot:   pi.Disks[0].Location,
 		}
 
-		fmt.Printf("%v requested for: %v\n", filename, pi.Id)
+		log.Printf("%v requested for: %v\n", filename, pi.Id)
 		t, err := template.New("templatefile").ParseFiles(fullFilename)
 		if err != nil {
 			panic(err)

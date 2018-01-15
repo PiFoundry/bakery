@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -133,7 +134,7 @@ func (f *FileBackend) regenNfsExports() error {
 		exportsContent = exportsContent + fmt.Sprintf("%v *(rw,sync,no_subtree_check,no_root_squash)\n", folder)
 	}
 
-	fmt.Println("Generated new exports file:\n" + exportsContent)
+	log.Println("Generated new exports file:\n" + exportsContent)
 	err := ioutil.WriteFile("/etc/exports", []byte(exportsContent), 0644)
 	if err != nil {
 		return err

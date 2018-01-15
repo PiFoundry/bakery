@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"path"
 	"strings"
@@ -61,12 +62,12 @@ func NewPiManager(bakeforms bakeformInventory, dm *diskManager) (piManager, erro
 	}
 
 	stuckPis, _ := newInv.listPis(PREPARING)
-	fmt.Println("unstucking Pis that are stuck in the PREPARING state.")
+	log.Println("unstucking Pis that are stuck in the PREPARING state.")
 	for _, pi := range stuckPis {
 		pi.Status = NOTINUSE
 		err := pi.Save()
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err.Error())
 		}
 	}
 
@@ -138,28 +139,28 @@ func (pm *PiManager) BakePi(pi PiInfo, bf *Bakeform) {
 	pm.piProvisionMutexes[pi.Id].Lock()
 	defer pm.piProvisionMutexes[pi.Id].Unlock()
 
-	fmt.Printf("Baking pi: %v\n", pi.Id)
+	log.Printf("Baking pi: %v\n", pi.Id)
 
 	//update the status to PREPARING
 	if err := pi.SetStatus(PREPARING); err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
 	//Deploy the disk from image
-	fmt.Println("Cloning bakeform...")
+	log.Println("Cloning bakeform...")
 	dsk, err := pm.diskManager.DiskFromBakeform(bf)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		pi.SetStatus(NOTINUSE)
 		return
 	}
 
 	//Attach the disk to the pi
-	fmt.Println("Attaching cloned disk")
+	log.Println("Attaching cloned disk")
 	err = pi.AttachDisk(dsk)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		pm.diskManager.DestroyDisk(dsk.ID)
 		pi.SetStatus(NOTINUSE)
 		return
@@ -169,7 +170,7 @@ func (pm *PiManager) BakePi(pi PiInfo, bf *Bakeform) {
 	pi.SourceBakeform = bf
 	pi.Save()
 
-	fmt.Printf("Pi with id %v is ready!\n", pi.Id)
+	log.Printf("Pi with id %v is ready!\n", pi.Id)
 }
 
 func (pm *PiManager) UnbakePi(pi *PiInfo, bf *Bakeform) {
@@ -181,7 +182,7 @@ func (pm *PiManager) UnbakePi(pi *PiInfo, bf *Bakeform) {
 
 	err := pi.Unbake(pm.diskManager)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 	}
 }
 
@@ -351,7 +352,7 @@ func (i *PiManager) RebootHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = pi.PowerCycle()
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 		return
