@@ -160,23 +160,30 @@ func (p *PiInfo) PowerCycle() error {
 }
 
 func (p *PiInfo) AttachDisk(dsk *disk) error {
+	//Check if disk is already attached. Early return if so
+	for _, disk := range p.Disks {
+		if disk.ID == dsk.ID {
+			return nil
+		}
+	}
+
+	//not attached? attach now and save.
 	p.Disks = append(p.Disks, dsk)
 	return p.Save()
 }
 
 func (p *PiInfo) DetachDisk(dsk *disk) error {
-	var dskIndex int
 	for i, d := range p.Disks {
-		if d == dsk {
-			dskIndex = i
-			break
+		//find the disk in the array
+		if d.ID == dsk.ID {
+			if i == 0 { //do not try to detach system disk
+				return fmt.Errorf("Cannot unassociate boot volume")
+			}
+			//delete disk from array
+			p.Disks = append(p.Disks[:i], p.Disks[:i+1]...)
+			return p.Save()
 		}
 	}
-
-	if dskIndex == 0 {
-		return fmt.Errorf("Cannot unassociate boot volume")
-	}
-
-	p.Disks = append(p.Disks[:dskIndex], p.Disks[:dskIndex+1]...)
-	return p.Save()
+	//if loop exits we didn't find the disk in the Pi
+	return fmt.Errorf("Disk with id %v is not attached to pi with id %v", dsk.ID, p.Id)
 }
