@@ -162,7 +162,7 @@ func (p *PiInfo) PowerCycle() error {
 func (p *PiInfo) AttachDisk(dsk *disk) error {
 	//Check if disk is already attached. Early return if so
 	for _, disk := range p.Disks {
-		if disk.ID == dsk.ID {
+		if disk == dsk {
 			log.Printf("AttachDisk: disk %v already attached", dsk.ID)
 			return nil
 		}
