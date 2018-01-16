@@ -163,12 +163,14 @@ func (p *PiInfo) AttachDisk(dsk *disk) error {
 	//Check if disk is already attached. Early return if so
 	for _, disk := range p.Disks {
 		if disk.ID == dsk.ID {
+			log.Printf("AttachDisk: disk %v already attached", dsk.ID)
 			return nil
 		}
 	}
 
 	//not attached? attach now and save.
 	p.Disks = append(p.Disks, dsk)
+	log.Printf("AttachDisk: Attached %v", dsk.ID)
 	return p.Save()
 }
 
@@ -181,6 +183,7 @@ func (p *PiInfo) DetachDisk(dsk *disk) error {
 			}
 			//delete disk from array
 			p.Disks = append(p.Disks[:i], p.Disks[:i+1]...)
+			log.Printf("DetechDisk: disk %v detached", dsk.ID)
 			return p.Save()
 		}
 	}
