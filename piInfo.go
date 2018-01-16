@@ -183,7 +183,7 @@ func (p *PiInfo) DetachDisk(dsk *disk) error {
 			}
 			//delete disk from array
 			p.Disks = append(p.Disks[:i], p.Disks[:i+1]...)
-			log.Printf("DetechDisk: disk %v detached", dsk.ID)
+			log.Printf("DetachDisk: disk %v detached", dsk.ID)
 			return p.Save()
 		}
 	}
