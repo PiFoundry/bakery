@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -76,6 +77,8 @@ func (dm *diskManager) NewDisk(size int) (*disk, error) {
 	}
 
 	id := uuid.New().String()
+
+	log.Printf("Creating new disk with id: %v", id)
 	location, err := dm.fb.CreateNfsFolder(id)
 	if err != nil {
 		return &disk{}, err
@@ -105,6 +108,8 @@ func (dm *diskManager) DiskFromBakeform(bf *Bakeform) (*disk, error) {
 	}
 
 	id := uuid.New().String()
+
+	log.Printf("Creating new disk with id %v from bakeform %v", id, bf.Name)
 	location, err := dm.fb.CopyNfsFolder(bf.MountedOn[1]+"/", id)
 	if err != nil {
 		return &disk{}, err
