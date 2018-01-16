@@ -182,7 +182,7 @@ func (p *PiInfo) DetachDisk(dsk *disk) error {
 				return fmt.Errorf("Cannot unassociate boot volume")
 			}
 			//delete disk from array
-			p.Disks = append(p.Disks[:i], p.Disks[:i+1]...)
+			p.Disks = append(p.Disks[:i], p.Disks[i+1:]...)
 			log.Printf("DetachDisk: disk %v detached", dsk.ID)
 			return p.Save()
 		}
