@@ -121,6 +121,7 @@ func (i *BakeformInventory) UploadHandler(w http.ResponseWriter, r *http.Request
 
 	file, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
+		log.Printf("Error creating image file: %v\n", err)
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte(err.Error()))
 		return
@@ -128,13 +129,17 @@ func (i *BakeformInventory) UploadHandler(w http.ResponseWriter, r *http.Request
 
 	_, err = io.Copy(file, r.Body)
 	if err != nil {
+		log.Printf("Error saving image: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 
 	err = i.Load()
 	if err != nil {
+		log.Printf("Error loading images: %v\n", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 
