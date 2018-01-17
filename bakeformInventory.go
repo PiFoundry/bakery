@@ -164,7 +164,7 @@ func (i *BakeformInventory) DeleteHandler(w http.ResponseWriter, r *http.Request
 
 	err = i.Load()
 	if err != nil {
-		log.Printf("Error deleting bakeform: %v", err)
+		log.Printf("Error Reloading bakerforms: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	}
