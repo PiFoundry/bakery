@@ -90,17 +90,15 @@ func (b *Bakeform) mount() error {
 }
 
 func (b *Bakeform) unmount() error {
-	for _, mountTarget := range b.MountedOn {
+	for i, mountTarget := range b.MountedOn {
 		log.Println("Unounting: " + mountTarget)
-		if mountTarget != nil {
-			err := syscall.Unmount(mountTarget, 0)
-			if err != nil {
-				return err
-			}
-
-			//b.MountedOn = append(b.MountedOn[:i], b.MountedOn[i+1:]...) //delete the mount point from the slice
-			b.MountedOn = nil
+		err := syscall.Unmount(mountTarget, 0)
+		if err != nil {
+			return err
 		}
+
+		b.MountedOn = append(b.MountedOn[:i], b.MountedOn[i+1:]...) //delete the mount point from the slice
+		//b.MountedOn[i] = nil
 	}
 
 	//unmap devices
