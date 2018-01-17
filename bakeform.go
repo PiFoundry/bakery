@@ -91,7 +91,7 @@ func (b *Bakeform) mount() error {
 
 func (b *Bakeform) unmount() error {
 	for i, mountTarget := range b.MountedOn {
-		if mountTarget == "" {
+		if mountTarget != "" {
 			log.Println("Unounting: " + mountTarget)
 			err := syscall.Unmount(mountTarget, 0)
 			if err != nil {
