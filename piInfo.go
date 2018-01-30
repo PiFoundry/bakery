@@ -86,6 +86,9 @@ func (p *PiInfo) Unbake(dm *diskManager) error {
 
 	//delete attached disks (including root)
 	for _, d := range disks {
+		if d == nil {
+			continue
+		}
 		log.Println("Destroying disk: " + d.Location)
 		err := dm.DestroyDisk(d.ID)
 		if err != nil {
