@@ -45,8 +45,8 @@ type bakeRequest struct {
 	BakeformName string `json:"bakeformName"`
 }
 
-func NewPiManager(bakeforms bakeformInventory, dm *diskManager) (piManager, error) {
-	db, err := sql.Open("sqlite3", "piInventory.db")
+func NewPiManager(bakeforms bakeformInventory, dm *diskManager, inventoryDbPath string) (piManager, error) {
+	db, err := sql.Open("sqlite3", inventoryDbPath)
 	sqlStmt := "create table if not exists inventory (id text not null primary key, status integer, bakeform text, diskIds text);"
 
 	_, err = db.Exec(sqlStmt)
