@@ -85,7 +85,7 @@ func (i *PiManager) NewPi(piId string) PiInfo {
 		Id:            piId,
 		Status:        NOTINUSE,
 		ppiPath:       i.ppiPath,
-		ppiconfigPath: i.ppiConfigPath,
+		ppiConfigPath: i.ppiConfigPath,
 	}
 }
 
