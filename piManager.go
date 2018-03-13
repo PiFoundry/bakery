@@ -40,13 +40,14 @@ type PiManager struct {
 	diskManager        *diskManager
 	piProvisionMutexes map[string]*sync.Mutex
 	ppiPath            string
+	ppiConfigPath      string
 }
 
 type bakeRequest struct {
 	BakeformName string `json:"bakeformName"`
 }
 
-func NewPiManager(bakeforms bakeformInventory, dm *diskManager, inventoryDbPath, ppiPath string) (piManager, error) {
+func NewPiManager(bakeforms bakeformInventory, dm *diskManager, inventoryDbPath, ppiPath, ppiConfigPath string) (piManager, error) {
 	db, err := sql.Open("sqlite3", inventoryDbPath)
 	sqlStmt := "create table if not exists inventory (id text not null primary key, status integer, bakeform text, diskIds text);"
 
@@ -60,6 +61,8 @@ func NewPiManager(bakeforms bakeformInventory, dm *diskManager, inventoryDbPath,
 		bakeforms:          bakeforms,
 		piProvisionMutexes: make(map[string]*sync.Mutex),
 		diskManager:        dm,
+		ppiPath:            ppiPath,
+		ppiConfigPath:      ppiConfigPath,
 	}
 
 	stuckPis, _ := newInv.listPis(PREPARING)
@@ -78,10 +81,11 @@ func NewPiManager(bakeforms bakeformInventory, dm *diskManager, inventoryDbPath,
 //NewPi just returns a new piInfo struct. It does not register the info in the DB. Use piInfo.Save() to do so.
 func (i *PiManager) NewPi(piId string) PiInfo {
 	return PiInfo{
-		db:      i.db,
-		Id:      piId,
-		Status:  NOTINUSE,
-		ppiPath: i.ppiPath,
+		db:            i.db,
+		Id:            piId,
+		Status:        NOTINUSE,
+		ppiPath:       i.ppiPath,
+		ppiconfigPath: i.ppiConfigPath,
 	}
 }
 

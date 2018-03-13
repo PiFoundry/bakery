@@ -29,6 +29,7 @@ type PiInfo struct {
 	Disks          []*disk   `json:"disks,omitempty"`
 	SourceBakeform *Bakeform `json:"sourceBakeform,omitempty"`
 	ppiPath        string
+	ppiconfigPath  string
 }
 
 func (p *PiInfo) SetStatus(status piStatus) error {
@@ -115,7 +116,7 @@ func (p *PiInfo) doPpiAction(action string) error {
 		return err
 	}
 
-	ppicmd := exec.Command(p.ppiPath)
+	ppicmd := exec.Command(p.ppiPath, "-c", p.ppiConfigPath)
 	ppistdin, err := ppicmd.StdinPipe()
 	if err != nil {
 		return err
