@@ -16,6 +16,7 @@ func main() {
 	bakeryRoot := os.Getenv("BAKERY_ROOT")
 	nfsServer := os.Getenv("NFS_ADDRESS")
 	inventoryDbPath := os.Getenv("DB_PATH")
+	ppiPath := os.Getenv("PPI_PATH")
 
 	if bakeryRoot == "" {
 		log.Fatalln("BAKERY_ROOT env var not set")
@@ -27,6 +28,10 @@ func main() {
 
 	if inventoryDbPath == "" {
 		log.Fatalln("DB_PATH env var not set")
+	}
+
+	if ppiPath == "" {
+		log.Fatalln("PPI_PATH env var not set")
 	}
 
 	nfsRoot := path.Join(bakeryRoot, "/nfs/")
@@ -49,7 +54,7 @@ func main() {
 	}
 	defer bakeforms.UnmountAll()
 
-	pile, err := NewPiManager(bakeforms, diskmgr, inventoryDbPath)
+	pile, err := NewPiManager(bakeforms, diskmgr, inventoryDbPath, ppiPath)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
