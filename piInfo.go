@@ -29,7 +29,7 @@ type PiInfo struct {
 	Disks          []*disk   `json:"disks,omitempty"`
 	SourceBakeform *Bakeform `json:"sourceBakeform,omitempty"`
 	ppiPath        string
-	ppiconfigPath  string
+	ppiConfigPath  string
 }
 
 func (p *PiInfo) SetStatus(status piStatus) error {
