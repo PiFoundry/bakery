@@ -24,21 +24,23 @@ type bakeformInventory interface {
 }
 
 type BakeformInventory struct {
-	folder    string
-	mountRoot string
-	nfs       fileBackend
-	Content   BakeformList
+	folder     string
+	mountRoot  string
+	nfs        fileBackend
+	Content    BakeformList
+	kpartxPath string
 }
 
-func newBakeformInventory(folder, mountRoot string, nfs fileBackend) (bakeformInventory, error) {
+func newBakeformInventory(folder, mountRoot string, nfs fileBackend, kpartxPath string) (bakeformInventory, error) {
 	if mountRoot == "" || folder == "" {
 		return &BakeformInventory{}, fmt.Errorf("Please set IMAGE_FOLDER and IMAGE_MOUNT_ROOT en vars.")
 	}
 
 	newInv := &BakeformInventory{
-		folder:    folder,
-		mountRoot: mountRoot,
-		nfs:       nfs,
+		folder:     folder,
+		mountRoot:  mountRoot,
+		nfs:        nfs,
+		kpartxPath: kpartxPath,
 	}
 
 	err := newInv.Load()
@@ -68,6 +70,7 @@ func (i *BakeformInventory) Load() error {
 			mountRoot:    i.mountRoot,
 			fb:           i.nfs,
 			bootLocation: path.Join(i.nfs.GetBootRoot(), name),
+			kpartxPath:   i.kpartxPath,
 		}
 
 		_, err := os.Stat(bf.bootLocation)

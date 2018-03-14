@@ -18,6 +18,7 @@ func main() {
 	inventoryDbPath := os.Getenv("DB_PATH")
 	ppiPath := os.Getenv("PPI_PATH")
 	ppiConfigPath := os.Getenv("PPI_CONFIG_PATH")
+	kpartxPath := os.Getenv("KPARTX_PATH")
 
 	if bakeryRoot == "" {
 		log.Fatalln("BAKERY_ROOT env var not set")
@@ -35,6 +36,10 @@ func main() {
 		log.Fatalln("PPI_PATH env var not set")
 	}
 
+	if kpartxPath == "" {
+		log.Fatalln("KPARTX_PATH env var not set")
+	}
+
 	nfsRoot := path.Join(bakeryRoot, "/nfs/")
 	imageFolder := path.Join(bakeryRoot, "/bakeforms/")
 	bootFolder := path.Join(bakeryRoot, "/boot/")
@@ -49,7 +54,7 @@ func main() {
 
 	diskmgr, err := NewDiskManager(fb)
 
-	bakeforms, err := newBakeformInventory(imageFolder, mountRoot, fb)
+	bakeforms, err := newBakeformInventory(imageFolder, mountRoot, fb, kpartxPath)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

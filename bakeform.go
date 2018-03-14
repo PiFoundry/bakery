@@ -17,6 +17,7 @@ type Bakeform struct {
 	fb           fileBackend
 	bootLocation string
 	MountedOn    []string `json:"-"`
+	kpartxPath   string
 }
 
 type BakeformList map[string]*Bakeform
@@ -43,7 +44,7 @@ func (b *Bakeform) mount() error {
 	}
 
 	//raspbian images have 2 partitions. before mounting we need to map them to devices
-	out, err := exec.Command("kpartx", "-av", b.Location).CombinedOutput()
+	out, err := exec.Command(b.kpartxPath, "-av", b.Location).CombinedOutput()
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func (b *Bakeform) unmount() error {
 	b.MountedOn = nil
 
 	//unmap devices
-	_, err := exec.Command("kpartx", "-d", b.Location).Output()
+	_, err := exec.Command(b.kpartxPath, "-d", b.Location).Output()
 	if err != nil {
 		return err
 	}
