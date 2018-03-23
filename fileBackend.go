@@ -58,7 +58,7 @@ func (nfs *FileBackend) GetBootRoot() string {
 
 func (f *FileBackend) copyFolder(s, d string) error {
 	_, err := exec.Command("rsync", "-xa", s, d).CombinedOutput()
-	if err != nil {
+	if err != nil && err != "exit status 23" { //avoid bug in ubuntu 14.04
 		return err
 	}
 
