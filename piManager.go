@@ -107,6 +107,8 @@ func (i *PiManager) GetPi(piId string) (PiInfo, error) {
 			Id:             id,
 			Status:         status,
 			SourceBakeform: i.bakeforms.List()[bakeform],
+			ppiPath:        i.ppiPath,
+			ppiConfigPath:  i.ppiConfigPath,
 		}
 
 		diskIds := strings.Split(diskIdsString, ",")
